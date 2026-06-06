@@ -1,0 +1,30 @@
+{
+  "name": "suivia-frontend",
+  "version": "1.0.0",
+  "description": "Frontend do SUIVIA",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .js,.jsx",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "vite": "^4.4.0",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.0"
+  },
+  "keywords": [
+    "suivia",
+    "frontend"
+  ],
+  "author": "SUIVIA Team",
+  "license": "MIT"
+}
