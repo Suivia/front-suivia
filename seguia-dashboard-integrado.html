@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUIVIA Dashboard - Teste de Integração</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+        
+        .connection-test {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid #475569;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .connection-test h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .connection-test h2::before {
+            content: "🔌";
+            font-size: 1.8rem;
+        }
+        
+        .test-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .test-controls input[type="text"] {
+            padding: 12px;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.5);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .test-controls input[type="file"] {
+            padding: 10px;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.5);
+            color: white;
+        }
+        
+        .test-controls button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .test-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .test-controls button:active {
+            transform: translateY(0);
+        }
+        
+        .console-log {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .console-log .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #475569;
+            padding-left: 10px;
+        }
+        
+        .console-log .log-entry.success {
+            color: #22c55e;
+            border-left-color: #22c55e;
+        }
+        
+        .console-log .log-entry.error {
+            color: #ef4444;
+            border-left-color: #ef4444;
+        }
+        
+        .console-log .log-entry.info {
+            color: #3b82f6;
+            border-left-color: #3b82f6;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .metric-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+        }
+        
+        .metric-card .number {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 10px 0;
+        }
+        
+        .metric-card .label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .metric-card .status {
+            font-size: 0.8rem;
+            margin-top: 10px;
+            padding: 5px 10px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .metric-card.success .status {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .metric-card.warning .status {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+        
+        .metric-card.critical .status {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SUIVIA Dashboard</h1>
+            <p>🧪 Ambiente de Teste - Integração com Backend Spring Boot</p>
+        </header>
+        
+        <div class="connection-test">
+            <h2>Teste de Conexão com Backend (Spring Boot)</h2>
+            
+            <div class="test-controls">
+                <input type="text" id="backendUrl" placeholder="Backend URL (ex: http://localhost:8080)" 
+                       value="http://localhost:8080">
+                <button onclick="testPing()">Ping (Status)</button>
+                <input type="file" id="fileInput" accept=".xml,.pdf,.txt" 
+                       placeholder="Selecione arquivo para upload">
+                <button onclick="testUpload()">Testar Upload</button>
+            </div>
+            
+            <div class="console-log" id="console">
+                <div class="log-entry info">[INFO] Console aguardando ações...</div>
+            </div>
+        </div>
+        
+        <div class="metrics">
+            <div class="metric-card success">
+                <div class="label">✅ APROVADAS</div>
+                <div class="number" id="aprovadas">0</div>
+                <div class="status">Touchless</div>
+            </div>
+            
+            <div class="metric-card warning">
+                <div class="label">⚠️ DIVERGENTES</div>
+                <div class="number" id="divergentes">0</div>
+                <div class="status">Ação Necessária</div>
+            </div>
+            
+            <div class="metric-card critical">
+                <div class="label">❌ REJEITADAS</div>
+                <div class="number" id="rejeitadas">0</div>
+                <div class="status">Risco Crítico</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="label">📊 TAXA TOUCHLESS</div>
+                <div class="number" id="touchlessRate">0%</div>
+                <div class="status">Eficiência</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Logger personalizado
+        function log(message, type = 'info') {
+            const console = document.getElementById('console');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString('pt-BR');
+            entry.textContent = `[${timestamp}] ${message}`;
+            console.appendChild(entry);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // Teste de Ping
+        async function testPing() {
+            const url = document.getElementById('backendUrl').value;
+            if (!url) {
+                log('❌ URL do backend não configurada!', 'error');
+                return;
+            }
+            
+            try {
+                log(`🔄 Testando conexão com ${url}...`, 'info');
+                const response = await fetch(`${url}/api/status`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    log('✅ Conexão OK! Backend respondeu com sucesso.', 'success');
+                } else {
+                    log(`⚠️ Backend respondeu com status ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erro de conexão: ${error.message}`, 'error');
+                log('💡 Certifique-se que o backend está rodando na porta 8080', 'info');
+                log('💡 Se erro for CORS: adicione a classe CorsConfig ao backend', 'info');
+            }
+        }
+        
+        // Teste de Upload
+        async function testUpload() {
+            const url = document.getElementById('backendUrl').value;
+            const fileInput = document.getElementById('fileInput');
+            
+            if (!url) {
+                log('❌ URL do backend não configurada!', 'error');
+                return;
+            }
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                log('❌ Nenhum arquivo selecionado!', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                log(`📤 Enviando arquivo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+                const response = await fetch(`${url}/api/invoices/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Upload realizado com sucesso!', 'success');
+                    log(`📊 Resposta: ${JSON.stringify(data)}`, 'success');
+                    
+                    // Atualizar métricas
+                    updateMetrics(data);
+                } else {
+                    log(`⚠️ Upload falhou com status ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erro no upload: ${error.message}`, 'error');
+                log('💡 Verifique se o backend está rodando', 'info');
+            }
+        }
+        
+        // Atualizar métricas
+        function updateMetrics(data) {
+            if (data.approved !== undefined) {
+                const aprovadas = parseInt(document.getElementById('aprovadas').textContent);
+                document.getElementById('aprovadas').textContent = aprovadas + 1;
+            }
+            
+            if (data.status === 'approved') {
+                log('✅ Nota aprovada! Contador de aprovadas +1', 'success');
+            } else if (data.status === 'divergent') {
+                const divergentes = parseInt(document.getElementById('divergentes').textContent);
+                document.getElementById('divergentes').textContent = divergentes + 1;
+                log('⚠️ Nota com divergência detectada!', 'error');
+            } else if (data.status === 'rejected') {
+                const rejeitadas = parseInt(document.getElementById('rejeitadas').textContent);
+                document.getElementById('rejeitadas').textContent = rejeitadas + 1;
+                log('❌ Nota rejeitada!', 'error');
+            }
+            
+            calculateTouchlessRate();
+        }
+        
+        // Calcular taxa Touchless
+        function calculateTouchlessRate() {
+            const aprovadas = parseInt(document.getElementById('aprovadas').textContent);
+            const divergentes = parseInt(document.getElementById('divergentes').textContent);
+            const rejeitadas = parseInt(document.getElementById('rejeitadas').textContent);
+            
+            const total = aprovadas + divergentes + rejeitadas;
+            const rate = total > 0 ? Math.round((aprovadas / total) * 100) : 0;
+            
+            document.getElementById('touchlessRate').textContent = rate + '%';
+        }
+        
+        // Log inicial
+        log('🚀 Dashboard carregado - Pronto para testes', 'info');
+        log('1️⃣ Configure a URL do backend', 'info');
+        log('2️⃣ Clique em "Ping (Status)" para testar conexão', 'info');
+        log('3️⃣ Selecione um arquivo e clique em "Testar Upload"', 'info');
+    </script>
+</body>
+</html>

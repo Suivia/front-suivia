@@ -1,18 +1,22 @@
-import React from 'react'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Inbox from './pages/Inbox';
+import InvoiceDetail from './pages/InvoiceDetail';
 
 function App() {
   return (
-    <div className="App">
-      <header>
-        <h1>Bem-vindo ao SUIVIA</h1>
-        <p>Plataforma de Gestão e Acompanhamento</p>
-      </header>
-      <main>
-        <p>Inicialize o seu projeto aqui</p>
-      </main>
-    </div>
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="inbox" element={<Inbox />} />
+          <Route path="inbox/:id" element={<InvoiceDetail />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
