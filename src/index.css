@@ -1,8 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body {
-  background-color: #f3f4f6;
-  font-family: system-ui, -apple-system, sans-serif;
-}
+body { @apply bg-gray-100 font-sans; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #a0aec0; border-radius: 3px; }
