@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useParams, Navigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, LineChart, Line } from "recharts";
-import { LayoutDashboard, Inbox, AlertTriangle, Layers, Camera, Settings, Search, Bell, Upload, RefreshCw, CheckCircle2, XCircle, Eye, ShieldCheck, FileText, LogOut, Zap, Clock, Download, ChevronRight, Filter, BookOpen, HelpCircle, Mail, Globe, FolderUp } from "lucide-react";
+import { LayoutDashboard, Inbox, AlertTriangle, Layers, Camera, Settings, Search, Bell, Upload, RefreshCw, CheckCircle2, XCircle, Eye, ShieldCheck, FileText, LogOut, Zap, Clock, Download, ChevronRight, Filter, BookOpen, HelpCircle, Mail, Globe, FolderUp, Library } from "lucide-react";
 import { svc }         from "./api/services";
 import { useApi }      from "./hooks/useApi";
 import { useWebSocket} from "./hooks/useWebSocket";
@@ -73,8 +73,9 @@ function Layout({ children }) {
     ["/batches",    "Lotes",        Layers],
     ["/upload",     "Upload",       Upload],
     ["/audit",      "Auditoria",    BookOpen],
-    ["/settings",   "Config",       Settings],
     ["/help",       "Ajuda",        HelpCircle],
+    ["/docs",       "Documentação", Library],
+    ["/settings",   "Config",       Settings],
   ];
   return (
     <div className="app">
@@ -1089,6 +1090,102 @@ function HelpPage() {
   </>;
 }
 
+const FUNCIONALIDADES = [
+  { id: "RF01", title: "Captura multicanal de notas", desc: "Recebimento de documentos fiscais por Upload manual, Câmera mobile, E-mail e API externa. Cada canal envia o arquivo via URL pré-assinada para o S3, disparando um evento (EventBridge) que aciona o Classificador, responsável por criar o registro de staging e direcionar o documento para o pipeline correto (XML ou OCR)." },
+  { id: "RF02", title: "Monitoramento de lotes", desc: "Agrupamento dos documentos recebidos em lotes (por origem/canal/data), com acompanhamento em tempo real da quantidade de itens, progresso de processamento e status de cada lote na tela de Lotes." },
+  { id: "RF03", title: "Extração via OCR (AWS Textract)", desc: "Para arquivos PDF, JPG e PNG, o sistema usa o AWS Textract (AnalyzeExpense) para extrair cabeçalho (fornecedor, CNPJ, valores, datas), itens de linha e as coordenadas (bounding boxes) de cada campo, permitindo destacar visualmente a origem de cada dado extraído na tela de detalhe." },
+  { id: "RF04", title: "Parser nativo de XML (NF-e/CT-e)", desc: "Documentos XML de NF-e e CT-e são interpretados diretamente pelas tags fiscais, sem necessidade de OCR, reduzindo custo e aumentando a precisão da extração." },
+  { id: "RF05", title: "Validação na SEFAZ", desc: "A chave de acesso da NF-e (44 dígitos) é consultada no webservice da SEFAZ para confirmar a situação do documento (autorizado, cancelado, etc.). O resultado é mantido em cache por 24 horas para evitar consultas repetidas." },
+  { id: "RF06", title: "Notificações em tempo real", desc: "Conexão via WebSocket (API Gateway WS) que envia atualizações instantâneas para o painel — novas notas recebidas, conclusão de extração, resultado do match — sem necessidade de atualizar a página." },
+  { id: "RF07", title: "Sugestão e vínculo de pedido de compra (PO)", desc: "O sistema sugere os pedidos de compra em aberto do mesmo fornecedor (CNPJ) com valores próximos ao total da nota, permitindo vincular a nota a um único PO ou dividir entre múltiplos PO's (split)." },
+  { id: "RF08", title: "Motor de match 3-way", desc: "Compara automaticamente Nota Fiscal x Pedido de Compra x Recebimento, calculando um score de aderência ponderado: CNPJ do fornecedor (25%, bloqueante), valor total (25%), itens/quantidades (25%), impostos (15%) e data de emissão (10%). Divergências são listadas com detalhe do campo e da diferença encontrada." },
+  { id: "RF09", title: "Regras de tolerância configuráveis", desc: "Permite configurar, por tenant (e opcionalmente por fornecedor), tolerâncias aceitáveis para divergências de valor, quantidade e imposto, usadas pelo motor de match para decidir se uma nota pode ser aprovada automaticamente (touchless)." },
+  { id: "RF10", title: "Fila de exceções", desc: "Lista as notas com divergências críticas ou relevantes, organizadas por tipo, severidade e valor, permitindo a resolução individual de cada caso ou a resolução em lote de exceções semelhantes." },
+  { id: "RF11", title: "Integração com ERP", desc: "Notas aprovadas (automaticamente ou manualmente) geram lançamento de contas a pagar no ERP configurado. Ajustes decorrentes de tolerância são lançados na conta contábil de ajuste definida (RN05). Notas rejeitadas têm o pagamento bloqueado no ERP." },
+  { id: "RF12", title: "Dashboard com indicadores em tempo real", desc: "Painel inicial com KPIs: total de notas processadas, taxa de aprovação automática (touchless), notas divergentes, notas rejeitadas, tempo médio de processamento, gráfico de volume dos últimos dias e distribuição de status." },
+  { id: "RF13", title: "Captura offline e resiliente", desc: "A captura mobile/câmera funciona como PWA com fila local: documentos capturados sem conexão ficam armazenados no dispositivo e são enviados automaticamente assim que a conexão é restabelecida." },
+  { id: "RF14", title: "Log de auditoria imutável", desc: "Todas as ações relevantes do sistema (criação, classificação, match, aprovação, rejeição, alterações de configuração) são registradas em um log de auditoria, com possibilidade de exportação em CSV." },
+  { id: "RF15", title: "Configuração multi-tenant", desc: "Cada empresa (tenant) possui suas próprias configurações: ERP de destino, e-mail para notificações, usuários autorizados e regras de tolerância — mantendo total isolamento de dados entre tenants." },
+];
+
+const REGRAS_NEGOCIO = [
+  { id: "RN01", title: "Prioridade do XML sobre PDF/imagem", desc: "Quando o mesmo documento chega em mais de um formato (ex.: XML e PDF da mesma nota), o sistema utiliza o XML como fonte de verdade, por ser mais preciso e não depender de OCR." },
+  { id: "RN02", title: "Bloqueio de duplicidade por chave de acesso", desc: "O parser de XML verifica a chave de acesso (invoice_key) da nota fiscal e impede o processamento duplicado do mesmo documento." },
+  { id: "RN03", title: "Cancelamento na SEFAZ é rejeição crítica", desc: "Se a consulta à SEFAZ indicar que a nota foi cancelada, o documento é imediatamente classificado como rejeição crítica, independentemente do resultado do match." },
+  { id: "RN05", title: "Tolerâncias geram lançamento de ajuste", desc: "Sempre que uma divergência dentro da tolerância configurada é aceita, o valor da diferença é lançado automaticamente na conta contábil de ajuste definida nas configurações do tenant." },
+  { id: "RN06", title: "Justificativa obrigatória para aprovação manual", desc: "Notas com divergências que exigem decisão manual só podem ser aprovadas mediante o registro de uma justificativa com no mínimo 30 caracteres, garantindo rastreabilidade da decisão." },
+  { id: "RN07", title: "Escalonamento de divergências recorrentes", desc: "Se o mesmo fornecedor apresentar a mesma divergência (com tolerância aplicada) por 5 vezes, o sistema sugere automaticamente a criação de uma regra de tolerância permanente para esse caso, reduzindo retrabalho futuro." },
+  { id: "RN08", title: "Documentos sem chave de NF-e exigem revisão manual", desc: "Documentos cuja chave de acesso não possui 44 dígitos (ex.: NFS-e ou notas manuais) são marcados como tipo 'nfse' e direcionados obrigatoriamente para revisão humana, não podendo ser aprovados automaticamente." },
+];
+
+function DocsPage() {
+  return <>
+    <Title t="Documentação do Sistema" sub="Visão completa do objetivo, funcionamento e funcionalidades do SUIVIA"/>
+
+    <div className="panel mt-2">
+      <h3>1. Objetivo do Sistema</h3>
+      <p>
+        O <b>SUIVIA</b> é uma plataforma de automação de conciliação fiscal e financeira que recebe notas
+        fiscais (NF-e, CT-e, NFS-e e documentos em PDF/imagem) por múltiplos canais, extrai automaticamente
+        seus dados, confronta essas informações com os pedidos de compra e recebimentos registrados no ERP,
+        e decide — com base em regras de tolerância configuráveis — se a nota pode ser aprovada
+        automaticamente (touchless) ou se precisa de intervenção humana. O objetivo é reduzir o trabalho
+        manual do time financeiro, acelerar o pagamento de fornecedores e diminuir erros de lançamento.
+      </p>
+    </div>
+
+    <div className="panel mt-2">
+      <h3>2. Função / Visão Geral do Sistema</h3>
+      <p>O fluxo geral do SUIVIA segue as etapas abaixo:</p>
+      <ul>
+        <li><b>Captura</b> — a nota fiscal entra no sistema via Upload manual, Câmera mobile, E-mail ou API externa.</li>
+        <li><b>Armazenamento</b> — o arquivo é salvo no Amazon S3 e um evento dispara o pipeline de processamento.</li>
+        <li><b>Classificação</b> — o sistema identifica o tipo de documento (XML de NF-e/CT-e ou PDF/imagem).</li>
+        <li><b>Extração</b> — dados são extraídos via parser de XML nativo ou via OCR (AWS Textract).</li>
+        <li><b>Validação fiscal</b> — quando aplicável, a chave de acesso é validada junto à SEFAZ.</li>
+        <li><b>Vínculo</b> — a nota é associada a um ou mais pedidos de compra (PO) do fornecedor.</li>
+        <li><b>Match 3-way</b> — nota, pedido e recebimento são comparados, gerando um score e eventuais divergências.</li>
+        <li><b>Decisão</b> — com base nas tolerâncias configuradas, a nota é aprovada automaticamente, enviada para a fila de exceções ou rejeitada.</li>
+        <li><b>Integração</b> — notas aprovadas geram lançamento de contas a pagar no ERP do tenant.</li>
+        <li><b>Auditoria</b> — todas as etapas e decisões ficam registradas em um log de auditoria imutável.</li>
+      </ul>
+    </div>
+
+    <div className="panel mt-2">
+      <h3>3. Características</h3>
+      <ul>
+        <li><b>Multicanal</b> — aceita notas por upload, câmera, e-mail e API.</li>
+        <li><b>Multi-tenant</b> — isola dados, regras e integrações por empresa.</li>
+        <li><b>Tempo real</b> — atualizações via WebSocket, sem necessidade de recarregar a página.</li>
+        <li><b>Resiliente / offline</b> — captura mobile funciona mesmo sem conexão, sincronizando depois.</li>
+        <li><b>Configurável</b> — tolerâncias, ERP de destino, e-mails e usuários ajustáveis por tenant.</li>
+        <li><b>Auditável</b> — toda ação fica registrada e pode ser exportada em CSV.</li>
+        <li><b>Serverless</b> — arquitetura em nuvem (AWS) baseada em Lambda, DynamoDB, S3, Textract e Cognito, com escalabilidade automática.</li>
+      </ul>
+    </div>
+
+    <div className="panel mt-2">
+      <h3>4. Funcionalidades (Requisitos Funcionais)</h3>
+      {FUNCIONALIDADES.map(f => (
+        <div className="div-item" key={f.id} style={{ flexDirection: "column", alignItems: "flex-start" }}>
+          <b>{f.id} — {f.title}</b>
+          <span>{f.desc}</span>
+        </div>
+      ))}
+    </div>
+
+    <div className="panel mt-2">
+      <h3>5. Regras de Negócio</h3>
+      {REGRAS_NEGOCIO.map(r => (
+        <div className="div-item" key={r.id} style={{ flexDirection: "column", alignItems: "flex-start" }}>
+          <b>{r.id} — {r.title}</b>
+          <span>{r.desc}</span>
+        </div>
+      ))}
+    </div>
+  </>;
+}
+
 // ─── Helpers UI ──────────────────────────────────────────────────
 function Title({ t, sub }) {
   return <div className="page-title"><h1>{t}</h1><p>{sub}</p></div>;
@@ -1122,6 +1219,7 @@ function App() {
                   <Route path="/audit"      element={<Audit/>}/>
                   <Route path="/settings"   element={<SettingsPage/>}/>
                   <Route path="/help"       element={<HelpPage/>}/>
+                  <Route path="/docs"       element={<DocsPage/>}/>
                 </Routes>
               </Layout>
             </Protected>
