@@ -7,10 +7,10 @@ const client = axios.create({ baseURL: API_BASE, timeout: 30000 });
 client.interceptors.request.use(async config => {
   try {
     const token = await currentSession();
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = token;
   } catch {
     const token = localStorage.getItem("suivia_token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token) config.headers.Authorization = token;
   }
   return config;
 });
