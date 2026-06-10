@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useParams, Navigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, LineChart, Line } from "recharts";
-import { LayoutDashboard, Inbox, AlertTriangle, Layers, Camera, Settings, Search, Bell, Upload, RefreshCw, CheckCircle2, XCircle, Eye, ShieldCheck, FileText, LogOut, Zap, Clock, Download, ChevronRight, Filter, BookOpen } from "lucide-react";
+import { LayoutDashboard, Inbox, AlertTriangle, Layers, Camera, Settings, Search, Bell, Upload, RefreshCw, CheckCircle2, XCircle, Eye, ShieldCheck, FileText, LogOut, Zap, Clock, Download, ChevronRight, Filter, BookOpen, HelpCircle, Mail, Globe, FolderUp } from "lucide-react";
 import { svc }         from "./api/services";
 import { useApi }      from "./hooks/useApi";
 import { useWebSocket} from "./hooks/useWebSocket";
@@ -71,9 +71,10 @@ function Layout({ children }) {
     ["/inbox",      "Inbox",        Inbox],
     ["/exceptions", "Exceções",     AlertTriangle],
     ["/batches",    "Lotes",        Layers],
-    ["/camera",     "SUIVIA Camera",Camera],
+    ["/upload",     "Upload",       Upload],
     ["/audit",      "Auditoria",    BookOpen],
     ["/settings",   "Config",       Settings],
+    ["/help",       "Ajuda",        HelpCircle],
   ];
   return (
     <div className="app">
@@ -548,8 +549,15 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([arr], { type: mime });
 }
 
-// ─── Camera / Upload (RF01, RF13) ────────────────────────────────
-function CameraPage() {
+// ─── Upload (RF01, RF13) ──────────────────────────────────────────
+const UPLOAD_TYPES = [
+  { id: "upload", label: "Upload Manual",  icon: FolderUp,  desc: "Selecione XML, PDF, JPG ou PNG do seu computador." },
+  { id: "camera", label: "Câmera Mobile",  icon: Camera,    desc: "Use a câmera do celular para fotografar a nota fiscal." },
+  { id: "email",  label: "E-mail",         icon: Mail,      desc: "Notas recebidas por e-mail são capturadas automaticamente." },
+  { id: "api",    label: "API Externa",    icon: Globe,     desc: "Integrações de sistemas externos enviam notas via API." },
+];
+
+function UploadPage() {
   const [files,    setFiles]    = useState([]);
   const [progress, setProgress] = useState({});
   const [msgs,     setMsgs]     = useState({});
@@ -618,20 +626,27 @@ function CameraPage() {
   };
 
   return <>
-    <Title t="SUIVIA Camera / Upload" sub="RF01, RF13 — Upload multicanal direto para S3 via presigned URL"/>
+    <Title t="Upload de Notas" sub="RF01, RF13 — Upload multicanal direto para S3 via presigned URL"/>
     {!online && <div className="apierr">⚠ Sem conexão — capturas serão sincronizadas automaticamente ao reconectar.</div>}
     {pending > 0 && <div className="apierr">📥 {pending} arquivo(s) pendente(s) de sincronização.</div>}
     <div className="panel">
-      <div className="form-row">
-        <label>Origem do arquivo:
-          <select value={source} onChange={e => setSource(e.target.value)}>
-            <option value="upload">Upload Manual</option>
-            <option value="camera">Câmera Mobile</option>
-            <option value="email">E-mail</option>
-            <option value="api">API Externa</option>
-          </select>
-        </label>
+      <h3>1. Escolha o tipo de envio</h3>
+      <div className="upload-types">
+        {UPLOAD_TYPES.map(t => {
+          const I = t.icon;
+          return (
+            <button key={t.id} type="button"
+                    className={"upload-type" + (source === t.id ? " on" : "")}
+                    onClick={() => setSource(t.id)}>
+              <I size={22}/>
+              <b>{t.label}</b>
+              <small>{t.desc}</small>
+            </button>
+          );
+        })}
       </div>
+
+      <h3 className="mt-2">2. Envie o(s) arquivo(s)</h3>
       <label className="drop-zone">
         <Upload size={48}/>
         <b>Arraste ou clique para selecionar XML, PDF, JPG ou PNG</b>
@@ -777,6 +792,303 @@ function SettingsPage() {
   </>;
 }
 
+// ─── Ajuda ──────────────────────────────────────────────────────
+// Telas ilustrativas (mockups SVG) usadas como "print" no passo a passo.
+function MockFrame({ active, children }) {
+  const items = ["Dashboard", "Inbox", "Exceções", "Lotes", "Upload", "Auditoria", "Config"];
+  return (
+    <svg viewBox="0 0 460 280" className="mock-screen" xmlns="http://www.w3.org/2000/svg">
+      <rect width="460" height="280" fill="#f0f4f8"/>
+      <rect width="84" height="280" fill="#0f1c2a"/>
+      <rect x="0" y="0" width="84" height="26" fill="#0f1c2a"/>
+      <text x="10" y="17" fill="#fff" fontSize="10" fontWeight="800">SUIVIA</text>
+      {items.map((it, i) => (
+        <g key={it}>
+          <rect x="0" y={32 + i * 24} width="84" height="22" fill={it === active ? "#162537" : "transparent"}/>
+          <text x="9" y={32 + i * 24 + 14} fill={it === active ? "#6ee7b7" : "#94a3b8"} fontSize="8">{it}</text>
+        </g>
+      ))}
+      <rect x="84" y="0" width="376" height="30" fill="#fff" stroke="#e2e8f0"/>
+      <rect x="96" y="8" width="160" height="14" rx="7" fill="#f1f5f9"/>
+      {children}
+    </svg>
+  );
+}
+
+function MockLogin() {
+  return (
+    <svg viewBox="0 0 460 280" className="mock-screen" xmlns="http://www.w3.org/2000/svg">
+      <rect width="460" height="280" fill="#0f1c2a"/>
+      <rect x="130" y="50" width="200" height="180" rx="12" fill="#fff"/>
+      <text x="155" y="85" fontSize="13" fontWeight="800" fill="#0f1c2a">SV SUIVIA</text>
+      <text x="155" y="102" fontSize="8" fill="#64748b">Recebimento Fiscal Inteligente</text>
+      <rect x="155" y="120" width="150" height="16" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="160" y="131" fontSize="7" fill="#94a3b8">E-mail</text>
+      <rect x="155" y="148" width="150" height="16" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="160" y="159" fontSize="7" fill="#94a3b8">Senha</text>
+      <rect x="155" y="178" width="150" height="22" rx="6" fill="#0f1c2a"/>
+      <text x="210" y="192" fontSize="8" fill="#fff" fontWeight="700">Entrar</text>
+    </svg>
+  );
+}
+
+function MockDashboard() {
+  return (
+    <MockFrame active="Dashboard">
+      {[0,1,2,3].map(i => (
+        <g key={i}>
+          <rect x={96 + i*88} y="42" width="80" height="46" rx="8" fill="#fff" stroke="#e2e8f0"/>
+          <rect x={104 + i*88} y="50" width="40" height="6" rx="3" fill="#cbd5e1"/>
+          <rect x={104 + i*88} y="62" width="30" height="14" rx="3" fill={["#0f1c2a","#34d399","#eab308","#ef4444"][i]} opacity="0.85"/>
+        </g>
+      ))}
+      <rect x="96" y="100" width="220" height="150" rx="8" fill="#fff" stroke="#e2e8f0"/>
+      <text x="106" y="118" fontSize="9" fontWeight="700" fill="#1e293b">Volume (7 dias)</text>
+      {[40,80,55,95,70,60,85].map((h,i) => (
+        <rect key={i} x={108 + i*28} y={230-h} width="16" height={h} fill="#34d399" rx="2"/>
+      ))}
+      <rect x="328" y="100" width="120" height="150" rx="8" fill="#fff" stroke="#e2e8f0"/>
+      <text x="338" y="118" fontSize="9" fontWeight="700" fill="#1e293b">Status</text>
+      <circle cx="388" cy="175" r="40" fill="none" stroke="#34d399" strokeWidth="14" strokeDasharray="180 70"/>
+      <circle cx="388" cy="175" r="40" fill="none" stroke="#eab308" strokeWidth="14" strokeDasharray="40 210" strokeDashoffset="-180"/>
+    </MockFrame>
+  );
+}
+
+function MockUpload() {
+  return (
+    <MockFrame active="Upload">
+      {UPLOAD_TYPES.map((t, i) => (
+        <g key={t.id}>
+          <rect x={96 + i*90} y="40" width="82" height="50" rx="8" fill={i===0?"#f0fdf4":"#fff"} stroke={i===0?"#34d399":"#e2e8f0"} strokeWidth={i===0?2:1}/>
+          <text x={104 + i*90} y="58" fontSize="7" fontWeight="700" fill="#1e293b">{t.label}</text>
+          <text x={104 + i*90} y="72" fontSize="6" fill="#94a3b8">{t.desc.slice(0, 26)}…</text>
+        </g>
+      ))}
+      <rect x="96" y="104" width="352" height="130" rx="10" fill="#fff" stroke="#cbd5e1" strokeDasharray="6 4"/>
+      <text x="225" y="160" fontSize="10" fill="#1e293b" fontWeight="700" textAnchor="middle">Arraste ou clique para enviar</text>
+      <text x="225" y="176" fontSize="8" fill="#94a3b8" textAnchor="middle">XML, PDF, JPG ou PNG</text>
+    </MockFrame>
+  );
+}
+
+function MockInbox() {
+  return (
+    <MockFrame active="Inbox">
+      <rect x="96" y="42" width="352" height="20" rx="4" fill="#0f1c2a"/>
+      {["NF-e","Fornecedor","Valor","Score","Status"].map((h,i) =>
+        <text key={h} x={104 + i*70} y="56" fontSize="7" fill="#fff">{h}</text>
+      )}
+      {[0,1,2,3,4].map(r => (
+        <g key={r}>
+          <rect x="96" y={66 + r*35} width="352" height="32" fill={r%2?"#f8fafc":"#fff"} stroke="#f1f5f9"/>
+          <rect x="104" y={78 + r*35} width="50" height="8" rx="2" fill="#cbd5e1"/>
+          <rect x="174" y={78 + r*35} width="60" height="8" rx="2" fill="#cbd5e1"/>
+          <rect x="244" y={78 + r*35} width="40" height="8" rx="2" fill="#cbd5e1"/>
+          <rect x="314" y={78 + r*35} width="36" height="8" rx="4" fill="#34d399" opacity={0.4 + r*0.1}/>
+          <rect x="384" y={78 + r*35} width="50" height="14" rx="6" fill={["#dcfce7","#fef9c3","#dbeafe","#fee2e2","#dcfce7"][r]}/>
+        </g>
+      ))}
+    </MockFrame>
+  );
+}
+
+function MockDetail() {
+  return (
+    <MockFrame active="Inbox">
+      <rect x="96" y="42" width="210" height="200" rx="8" fill="#fafafa" stroke="#e2e8f0"/>
+      <text x="106" y="60" fontSize="9" fontWeight="700" fill="#1e293b">DOCUMENTO (NF-e)</text>
+      {[0,1,2,3,4,5].map(i =>
+        <rect key={i} x="106" y={74 + i*22} width={170 - (i%2)*40} height="8" rx="2" fill="#e2e8f0"/>
+      )}
+      <rect x="316" y="42" width="132" height="95" rx="8" fill="#fff" stroke="#e2e8f0"/>
+      <text x="324" y="58" fontSize="8" fontWeight="700" fill="#1e293b">Divergências</text>
+      <rect x="324" y="68" width="116" height="22" rx="4" fill="#fee2e2"/>
+      <text x="330" y="82" fontSize="6.5" fill="#991b1b">Preço unitário diverge 6%</text>
+      <rect x="324" y="96" width="116" height="22" rx="4" fill="#fef9c3"/>
+      <text x="330" y="110" fontSize="6.5" fill="#854d0e">Sugestão de PO encontrada</text>
+      <rect x="316" y="146" width="132" height="96" rx="8" fill="#fff" stroke="#e2e8f0"/>
+      <text x="324" y="162" fontSize="8" fontWeight="700" fill="#1e293b">Ações</text>
+      <rect x="324" y="172" width="116" height="20" rx="6" fill="#16a34a"/>
+      <text x="345" y="186" fontSize="8" fill="#fff" fontWeight="700">Aprovar</text>
+      <rect x="324" y="198" width="116" height="20" rx="6" fill="#dc2626"/>
+      <text x="350" y="212" fontSize="8" fill="#fff" fontWeight="700">Rejeitar</text>
+    </MockFrame>
+  );
+}
+
+function MockExceptions() {
+  return (
+    <MockFrame active="Exceções">
+      {[0,1,2].map(r => (
+        <g key={r}>
+          <rect x="96" y={42 + r*64} width="352" height="56" rx="8" fill="#fff" stroke="#fca5a5"/>
+          <rect x="108" y={54 + r*64} width="120" height="9" rx="2" fill="#1e293b" opacity="0.7"/>
+          <rect x="108" y={70 + r*64} width="200" height="7" rx="2" fill="#fee2e2"/>
+          <rect x="108" y={82 + r*64} width="60" height="14" rx="6" fill="#0f1c2a"/>
+          <text x="118" y={92 + r*64} fontSize="7" fill="#fff">Resolver</text>
+        </g>
+      ))}
+    </MockFrame>
+  );
+}
+
+function MockBatches() {
+  return (
+    <MockFrame active="Lotes">
+      {[0,1,2,3].map(r => (
+        <g key={r}>
+          <rect x="96" y={42 + r*48} width="352" height="40" rx="8" fill="#fff" stroke="#e2e8f0"/>
+          <text x="108" y={62 + r*48} fontSize="8" fontWeight="700" fill="#1e293b">Lote #{1000+r}</text>
+          <rect x="108" y={68 + r*48} width="150" height="6" rx="3" fill="#e2e8f0"/>
+          <rect x="108" y={68 + r*48} width={60 + r*30} height="6" rx="3" fill="#34d399"/>
+          <rect x="380" y={54 + r*48} width="56" height="16" rx="6" fill="#dbeafe"/>
+        </g>
+      ))}
+    </MockFrame>
+  );
+}
+
+function MockAudit() {
+  return (
+    <MockFrame active="Auditoria">
+      <rect x="96" y="42" width="352" height="20" rx="4" fill="#0f1c2a"/>
+      <rect x="370" y="40" width="70" height="16" rx="6" fill="#16a34a"/>
+      <text x="378" y="52" fontSize="6.5" fill="#fff">Exportar CSV</text>
+      {[0,1,2,3,4,5].map(r => (
+        <g key={r}>
+          <rect x="96" y={66 + r*28} width="352" height="26" fill={r%2?"#f8fafc":"#fff"} stroke="#f1f5f9"/>
+          <rect x="104" y={75 + r*28} width="70" height="7" rx="2" fill="#cbd5e1"/>
+          <rect x="184" y={75 + r*28} width="90" height="7" rx="2" fill="#94a3b8"/>
+          <rect x="284" y={75 + r*28} width="100" height="7" rx="2" fill="#e2e8f0"/>
+        </g>
+      ))}
+    </MockFrame>
+  );
+}
+
+function MockSettings() {
+  return (
+    <MockFrame active="Config">
+      <rect x="96" y="42" width="220" height="200" rx="8" fill="#fff" stroke="#e2e8f0"/>
+      <text x="106" y="60" fontSize="9" fontWeight="700" fill="#1e293b">Regras de Tolerância</text>
+      {[0,1,2,3].map(i =>
+        <rect key={i} x="106" y={72 + i*24} width="200" height="16" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      )}
+      <rect x="106" y={72 + 4*24} width="80" height="20" rx="6" fill="#0f1c2a"/>
+      <text x="118" y={86 + 4*24} fontSize="7" fill="#fff">Salvar</text>
+      <rect x="328" y="42" width="120" height="200" rx="8" fill="#fff" stroke="#e2e8f0"/>
+      <text x="338" y="60" fontSize="9" fontWeight="700" fill="#1e293b">Tenant / ERP</text>
+      {[0,1,2].map(i =>
+        <rect key={i} x="338" y={72 + i*24} width="100" height="16" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      )}
+    </MockFrame>
+  );
+}
+
+function HelpStep({ n, title, mockup, children }) {
+  return (
+    <div className="panel help-step">
+      <div className="help-step-head">
+        <span className="help-num">{n}</span>
+        <h3>{title}</h3>
+      </div>
+      <div className="help-step-body">
+        <div className="help-text">{children}</div>
+        {mockup}
+      </div>
+    </div>
+  );
+}
+
+function HelpPage() {
+  return <>
+    <Title t="Ajuda — Como operar o SUIVIA" sub="Passo a passo com telas do sistema, do login ao fechamento da nota"/>
+
+    <HelpStep n={1} title="Faça login" mockup={<MockLogin/>}>
+      <p>Acesse o sistema com o e-mail e a senha cadastrados pelo administrador.</p>
+      <ul>
+        <li>Informe seu e-mail corporativo.</li>
+        <li>Informe a senha fornecida.</li>
+        <li>Clique em <b>Entrar</b>.</li>
+      </ul>
+    </HelpStep>
+
+    <HelpStep n={2} title="Acompanhe o Dashboard" mockup={<MockDashboard/>}>
+      <p>A tela inicial mostra os indicadores em tempo real do recebimento fiscal.</p>
+      <ul>
+        <li><b>Processadas, Touchless, Divergentes, Rejeitadas</b> — visão geral do volume.</li>
+        <li>Gráfico de volume dos últimos 7 dias.</li>
+        <li>Distribuição de status das notas (gráfico de pizza).</li>
+      </ul>
+    </HelpStep>
+
+    <HelpStep n={3} title="Envie uma nota (Upload)" mockup={<MockUpload/>}>
+      <p>No menu <b>Upload</b>, escolha o canal de entrada e envie o arquivo da nota.</p>
+      <ul>
+        <li><b>Upload Manual</b> — selecione XML, PDF, JPG ou PNG do computador.</li>
+        <li><b>Câmera Mobile</b> — fotografe a nota direto pelo celular.</li>
+        <li><b>E-mail</b> — notas encaminhadas para o e-mail monitorado entram automaticamente.</li>
+        <li><b>API Externa</b> — sistemas integrados enviam notas via API.</li>
+        <li>Arraste o arquivo na área pontilhada ou clique para selecionar.</li>
+        <li>Acompanhe o progresso do envio na lista abaixo.</li>
+      </ul>
+    </HelpStep>
+
+    <HelpStep n={4} title="Revise a fila no Inbox" mockup={<MockInbox/>}>
+      <p>Todas as notas recebidas aparecem no <b>Inbox</b>, já com o score de aderência calculado.</p>
+      <ul>
+        <li>Use a busca para localizar por NF-e, CNPJ, pedido ou lote.</li>
+        <li>O <b>Score</b> indica o grau de aderência ao pedido de compra (PO).</li>
+        <li>Clique em uma linha para abrir o detalhe da nota.</li>
+      </ul>
+    </HelpStep>
+
+    <HelpStep n={5} title="Analise e aprove a nota" mockup={<MockDetail/>}>
+      <p>Na tela de detalhe, compare o documento extraído com o pedido de compra.</p>
+      <ul>
+        <li>O painel esquerdo mostra os dados extraídos da nota (Textract/XML).</li>
+        <li>Divergências encontradas aparecem destacadas à direita.</li>
+        <li>Use <b>Vincular PO</b> para associar manualmente um pedido sugerido.</li>
+        <li><b>Aprovar</b> envia a nota para o ERP; <b>Rejeitar</b> bloqueia o pagamento.</li>
+      </ul>
+    </HelpStep>
+
+    <HelpStep n={6} title="Trate as Exceções" mockup={<MockExceptions/>}>
+      <p>Notas com divergências críticas ficam na fila de <b>Exceções</b>, aguardando decisão.</p>
+      <ul>
+        <li>Cada cartão mostra o motivo da divergência.</li>
+        <li>Clique em <b>Resolver</b> para abrir o detalhe e decidir (aprovar/rejeitar/ajustar).</li>
+        <li>É possível resolver várias notas em lote.</li>
+      </ul>
+    </HelpStep>
+
+    <HelpStep n={7} title="Acompanhe os Lotes" mockup={<MockBatches/>}>
+      <p>A tela de <b>Lotes</b> agrupa as notas pelo lote de origem (upload, e-mail, etc.).</p>
+      <ul>
+        <li>Veja o progresso de processamento de cada lote.</li>
+        <li>Clique em um lote para ver as notas que o compõem.</li>
+      </ul>
+    </HelpStep>
+
+    <HelpStep n={8} title="Consulte a Auditoria" mockup={<MockAudit/>}>
+      <p>Todas as ações realizadas no sistema ficam registradas em <b>Auditoria</b>.</p>
+      <ul>
+        <li>Histórico completo: data/hora, ação, entidade e usuário responsável.</li>
+        <li>Use <b>Exportar CSV</b> para baixar o log completo para análise externa.</li>
+      </ul>
+    </HelpStep>
+
+    <HelpStep n={9} title="Configure regras e tenant" mockup={<MockSettings/>}>
+      <p>Em <b>Config</b>, ajuste as regras de tolerância e os dados da empresa.</p>
+      <ul>
+        <li>Defina tolerâncias de valor, quantidade e imposto por fornecedor.</li>
+        <li>Configure o ERP de destino, e-mail de notificações e usuários autorizados.</li>
+      </ul>
+    </HelpStep>
+  </>;
+}
+
 // ─── Helpers UI ──────────────────────────────────────────────────
 function Title({ t, sub }) {
   return <div className="page-title"><h1>{t}</h1><p>{sub}</p></div>;
@@ -806,9 +1118,10 @@ function App() {
                   <Route path="/exceptions" element={<Exceptions/>}/>
                   <Route path="/batches"    element={<Batches/>}/>
                   <Route path="/batches/:id"element={<Batches/>}/>
-                  <Route path="/camera"     element={<CameraPage/>}/>
+                  <Route path="/upload"     element={<UploadPage/>}/>
                   <Route path="/audit"      element={<Audit/>}/>
                   <Route path="/settings"   element={<SettingsPage/>}/>
+                  <Route path="/help"       element={<HelpPage/>}/>
                 </Routes>
               </Layout>
             </Protected>
